@@ -6,9 +6,8 @@
 ![Database](https://img.shields.io/badge/Database-AWS%20RDS%20MySQL-527FFF?style=flat&logo=amazon-aws&logoColor=white)
 ![Realtime](https://img.shields.io/badge/Realtime-Firebase-FFCA28?style=flat&logo=firebase&logoColor=black)
 ![Security](https://img.shields.io/badge/Security-ISO%2027400-blue?style=flat)
-![Author](https://img.shields.io/badge/Author-vamp9-black?style=flat)
 
-Aplicacion movil Android para monitoreo climatico y gestion de riego automatizado en entornos agricolas e industriales OT. Desarrollada por vamp9.
+Aplicacion movil Android para monitoreo climatico y gestion de riego automatizado en entornos agricolas e industriales OT. Desarrollada por Andrés.
 
 ## Arquitectura del Sistema
 
