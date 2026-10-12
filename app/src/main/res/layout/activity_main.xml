@@ -1,96 +1,573 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:fillViewport="true"
+    android:background="@color/bg_app">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Panel de Control OT"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp">
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Top Bar / Executive App Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Temperatura Ambiental"
-                android:textSize="14sp"/>
-            <TextView
-                android:id="@+id/tvTemperatura"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="-- °C"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="#D32F2F"/>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
 
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp">
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="@color/primary_container"
+                app:strokeColor="@color/border_subtle"
+                app:strokeWidth="1dp"
+                android:layout_marginEnd="12dp">
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_leaf"
+                    app:tint="@color/primary"
+                    android:contentDescription="vamp9 Logo" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Panel de Control OT"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Estación Invernadero #1 • vamp9"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Pill de Estado Conexión en Tiempo Real -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_badge_emerald"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp">
+
+                <View
+                    android:id="@+id/vStatusPulse"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_online_dot"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvStatusLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="En Línea"
+                    android:textColor="@color/primary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SECCIÓN 1: TELEMETRÍA EXACTA (100% Precisión) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-            <TextView
-                android:layout_width="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="16dp">
+
+            <!-- Tarjeta 1: Temperatura Exacta -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Humedad Relativa"
-                android:textSize="14sp"/>
-            <TextView
-                android:id="@+id/tvHumedad"
-                android:layout_width="wrap_content"
+                android:layout_weight="1"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:strokeColor="@color/telemetry_temp_border"
+                app:strokeWidth="1dp"
+                android:layout_marginEnd="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/telemetry_temp_bg">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_thermostat"
+                                app:tint="@color/telemetry_temp"
+                                android:contentDescription="Temperatura" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Temperatura"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Valor Exacto de Temperatura -->
+                    <TextView
+                        android:id="@+id/tvTemperatura"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- °C"
+                        android:textColor="@color/telemetry_temp"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="-0.02" />
+
+                    <TextView
+                        android:id="@+id/tvTempBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Telemetría en Vivo"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Tarjeta 2: Humedad Relativa Exacta -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="-- %"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="#1976D2"/>
+                android:layout_weight="1"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:strokeColor="@color/telemetry_hum_border"
+                app:strokeWidth="1dp"
+                android:layout_marginStart="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/telemetry_hum_bg">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_water_drop"
+                                app:tint="@color/telemetry_hum"
+                                android:contentDescription="Humedad" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Humedad"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Valor Exacto de Humedad -->
+                    <TextView
+                        android:id="@+id/tvHumedad"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- %"
+                        android:textColor="@color/telemetry_hum"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="-0.02" />
+
+                    <TextView
+                        android:id="@+id/tvHumBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sensor DHT/Hygro"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/swModoManual"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Modo Control Manual"
-        android:textSize="16sp"
-        android:layout_marginBottom="12dp"/>
+        <!-- SECCIÓN 2: SIMULADOR 3D / ANIMACIÓN FÍSICA DE COMPUERTA Y RIEGO -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="3dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:strokeColor="@color/border_subtle"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="16dp">
 
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/swVentilacion"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Compuerta Ventilación (Servo SG90)"
-        android:enabled="false"
-        android:layout_marginBottom="8dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/swBomba"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Bomba de Riego (Relé / LED)"
-        android:enabled="false"
-        android:layout_marginBottom="24dp"/>
+                <!-- Header de la Simulación 3D -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="18dp"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="10dp">
 
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Cerrar Sesión"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-</LinearLayout>
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_cube_3d"
+                        app:tint="@color/manual_accent"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="Simulador 3D" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Simulación Gemelo Digital 3D"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvSimulationStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Simulación en vivo de Compuerta y Riego"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvBadge3D"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge_violet"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="Interactiva"
+                        android:textColor="@color/manual_accent"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Vista 3D Nativa Custom View -->
+                <com.inacap.iotclima.AgroSimulation3DView
+                    android:id="@+id/agroSimulationView"
+                    android:layout_width="match_parent"
+                    android:layout_height="240dp"
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginBottom="14dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SECCIÓN 3: CONTROL Y ACTUADORES -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Control de Actuadores de Campo"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Switch 1: Modo Control Manual (Destacado) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardModoManual"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:strokeColor="@color/manual_border"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/manual_bg"
+                    android:layout_marginEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_manual_mode"
+                        app:tint="@color/manual_accent"
+                        android:contentDescription="Modo Manual" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Modo Control Manual"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvModoManualDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Habilita anulación y animación interactiva"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swModoManual"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/manual_accent" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Switch 2: Compuerta de Ventilación (Servo SG90) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:strokeColor="@color/border_subtle"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/secondary_light"
+                    android:layout_marginEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_gate_ventilation"
+                        app:tint="@color/secondary"
+                        android:contentDescription="Compuerta" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Compuerta Ventilación"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvVentilacionEstado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Servo SG90 • Cerrada (0°)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swVentilacion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/secondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Switch 3: Bomba de Riego (Relé / LED) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:strokeColor="@color/border_subtle"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/primary_light"
+                    android:layout_marginEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_pump"
+                        app:tint="@color/primary"
+                        android:contentDescription="Bomba" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bomba de Riego"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvBombaEstado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Relé / Aspersores • Inactiva"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swBomba"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/primary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Botón Cerrar Sesión Moderno -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Cerrar Sesión"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/telemetry_temp"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            app:strokeColor="@color/telemetry_temp_border"
+            app:strokeWidth="1.5dp"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_logout"
+            app:iconGravity="textStart"
+            app:iconTint="@color/telemetry_temp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Footer Informativo -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Plataforma de Control Industrial OT • vamp9"
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp"
+            android:textAlignment="center"
+            android:layout_marginBottom="12dp" />
+
+    </LinearLayout>
+</ScrollView>

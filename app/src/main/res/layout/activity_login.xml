@@ -1,53 +1,229 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center">
+    android:fillViewport="true"
+    android:background="@color/bg_app">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Monitoreo Agrícola IoT"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="32dp"/>
-
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etEmail"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
+
+        <!-- Header / Branding Hero vamp9 IoT -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginBottom="28dp">
+
+            <!-- Icono Insignia Inteligente -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/primary_container"
+                app:strokeColor="@color/border_subtle"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="16dp">
+
+                <ImageView
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_leaf"
+                    app:tint="@color/primary"
+                    android:contentDescription="vamp9 IoT Logo" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Pill de Marca vamp9 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_badge_emerald"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="5dp"
+                android:layout_marginBottom="10dp">
+
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:background="@drawable/bg_online_dot"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="vamp9 IoT • Smart Agro"
+                    android:textColor="@color/primary_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Título Principal -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Monitoreo Agrícola IoT"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textAlignment="center" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Plataforma de Telemetría y Control de Riego"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:layout_marginTop="4dp"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+        <!-- Tarjeta Principal de Autenticación -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Correo Electrónico"
-            android:inputType="textEmailAddress"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            app:cardCornerRadius="24dp"
+            app:cardElevation="3dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:strokeColor="@color/border_subtle"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etPassword"
-            android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Acceso de Operador"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ingresa con tus credenciales autorizadas del sistema."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="20dp" />
+
+                <!-- Input Correo Electrónico -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:hint="Correo Electrónico"
+                    app:startIconDrawable="@drawable/ic_email"
+                    app:startIconTint="@color/text_secondary"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxStrokeColor="@color/primary"
+                    android:layout_marginBottom="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:paddingVertical="14dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Input Contraseña -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:hint="Contraseña"
+                    app:startIconDrawable="@drawable/ic_lock"
+                    app:startIconTint="@color/text_secondary"
+                    app:endIconMode="password_toggle"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxStrokeColor="@color/primary"
+                    android:layout_marginBottom="24dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:paddingVertical="14dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Botón Iniciar Sesión Moderno -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:text="Iniciar Sesión"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/primary"
+                    app:cornerRadius="14dp"
+                    app:elevation="2dp"
+                    app:icon="@drawable/ic_shield_check"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/white" />
+
+                <!-- Spinner de Carga -->
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center_horizontal"
+                    android:indeterminateTint="@color/primary"
+                    android:visibility="gone"
+                    android:layout_marginTop="16dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Footer Informativo de Seguridad OT & ISO 27400 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="Contraseña"
-            android:inputType="textPassword"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-    <Button
-        android:id="@+id/btnLogin"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Iniciar Sesión"/>
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_shield_check"
+                app:tint="@color/text_tertiary"
+                android:layout_marginEnd="6dp" />
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_marginTop="16dp"/>
-</LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gateway OT Seguro • ISO 27400 • vamp9"
+                android:textColor="@color/text_tertiary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

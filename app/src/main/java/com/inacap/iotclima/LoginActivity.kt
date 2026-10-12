@@ -2,6 +2,7 @@ package com.inacap.iotclima
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,11 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.inacap.iotclima.databinding.ActivityLoginBinding
 
+/**
+ * Pantalla de inicio de sesión de vamp9 IoT.
+ * Mantiene la autenticación en Gateway Raspberry Pi (ingreso.php)
+ * con diseño moderno y ligero.
+ */
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
@@ -20,7 +26,13 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btnLogin.setOnClickListener {
+        setupListeners()
+    }
+
+    private fun setupListeners() {
+        binding.btnLogin.setOnClickListener { view ->
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
 

@@ -1,5 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Colores Base -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Paleta Tono Claro vamp9 Smart Agro -->
+    <color name="bg_app">#F8FAFC</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="bg_card_variant">#F1F5F9</color>
+    <color name="border_subtle">#E2E8F0</color>
+    <color name="border_active">#CBD5E1</color>
+
+    <!-- Marca e Identidad Principal -->
+    <color name="primary">#059669</color>
+    <color name="primary_dark">#047857</color>
+    <color name="primary_light">#D1FAE5</color>
+    <color name="primary_container">#ECFDF5</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- Secundario y Acentos -->
+    <color name="secondary">#0284C7</color>
+    <color name="secondary_light">#E0F2FE</color>
+    <color name="secondary_container">#F0F9FF</color>
+
+    <!-- Telemetría Específica -->
+    <color name="telemetry_temp">#E11D48</color>
+    <color name="telemetry_temp_bg">#FFF1F2</color>
+    <color name="telemetry_temp_border">#FECDD3</color>
+    
+    <color name="telemetry_hum">#0284C7</color>
+    <color name="telemetry_hum_bg">#F0F9FF</color>
+    <color name="telemetry_hum_border">#BAE6FD</color>
+
+    <!-- Modo Manual & Actuadores -->
+    <color name="manual_accent">#7C3AED</color>
+    <color name="manual_bg">#F5F3FF</color>
+    <color name="manual_border">#DDD6FE</color>
+
+    <color name="actuator_on">#10B981</color>
+    <color name="actuator_on_bg">#ECFDF5</color>
+    <color name="actuator_off">#64748B</color>
+    <color name="actuator_off_bg">#F8FAFC</color>
+
+    <!-- Tipografía y Jerarquía -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_tertiary">#94A3B8</color>
+    <color name="text_hint">#94A3B8</color>
+
+    <!-- Estados -->
+    <color name="status_online">#10B981</color>
+    <color name="status_online_glow">#34D399</color>
+    <color name="status_offline">#EF4444</color>
+
+    <!-- Simulación 3D Canvas -->
+    <color name="sim_bg_gradient_start">#F8FAFC</color>
+    <color name="sim_bg_gradient_end">#EFF6FF</color>
+    <color name="sim_grid">#E2E8F0</color>
+    <color name="sim_soil">#D97706</color>
+    <color name="sim_soil_wet">#92400E</color>
+    <color name="sim_plant">#10B981</color>
+    <color name="sim_water">#38BDF8</color>
+    <color name="sim_servo_metal">#64748B</color>
+    <color name="sim_servo_flap">#3B82F6</color>
+    <color name="sim_servo_flap_accent">#60A5FA</color>
 </resources>
