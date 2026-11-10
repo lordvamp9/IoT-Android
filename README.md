@@ -1,37 +1,36 @@
-# IoTClimaRiego
+# IoTClimaRiego · Evaluación 3
 
-![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white)
-![Language](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)
-![Backend](https://img.shields.io/badge/Backend-Raspberry%20Pi-C51A4A?style=flat&logo=raspberrypi&logoColor=white)
-![Database](https://img.shields.io/badge/Database-AWS%20RDS%20MySQL-527FFF?style=flat&logo=amazon-aws&logoColor=white)
-![Realtime](https://img.shields.io/badge/Realtime-Firebase-FFCA28?style=flat&logo=firebase&logoColor=black)
-![Security](https://img.shields.io/badge/Security-ISO%2027400-blue?style=flat)
+Prototipo de invernadero IoT con aplicación Android, ESP32 simulado en Wokwi, Firebase y AWS IoT Core. La bomba se representa mediante un LED.
 
-Aplicacion movil Android para monitoreo climatico y gestion de riego automatizado en entornos agricolas e industriales OT. Desarrollada por Andrés.
+![Marca IoTClimaRiego](app/src/main/res/drawable-nodpi/brand_plant_glass.png)
 
-## Arquitectura del Sistema
+### Vista de la aplicación
 
-- **Cliente Movil:** Aplicacion nativa Android desarrollada en Kotlin con Material Components y ViewBinding.
-- **Gateway OT:** Servidor intermedio alojado en Raspberry Pi (Raspbian OS) con servidor web Apache y scripts PHP (`cn.php`, `ingreso.php`).
-- **Base de Datos Cloud:** Instancia relacional en AWS RDS (MySQL) para persistencia y auditoria de accesos de usuarios.
-- **Telemetria en Tiempo Real:** Integracion con Firebase Realtime Database para monitoreo de sensores (temperatura y humedad) y control de actuadores (bomba de riego y compuerta de ventilacion).
-- **Seguridad:** Cumplimiento de lineamientos ISO 27400 mediante control de acceso, aislamiento de credenciales maestras de base de datos en el gateway y uso de sentencias preparadas para prevenir inyecciones SQL.
+![Pantalla de control e integridad de la aplicación](docs/images/app-real.jpg)
 
-## Mockups de la Interfaz
+## Arquitectura
 
-<p align="center">
-  <img src="docs/images/login_mockup.png" alt="Pantalla de Autenticacion" width="300"/>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/images/dashboard_mockup.png" alt="Panel de Control OT" width="300"/>
-</p>
+ESP32 → MQTT con TLS → AWS IoT Core → DynamoDB. Un gateway Python conecta MQTT con Firestore; la aplicación Android utiliza Firebase Authentication y Firestore para visualizar lecturas y enviar órdenes.
 
-## Componentes y Tecnologias
+## Componentes
 
-- Android Studio
-- Kotlin
-- Android Volley
-- Firebase Realtime Database
-- Raspberry Pi (Raspbian OS)
-- Apache HTTP Server y PHP
-- AWS RDS MySQL
-- MySQL Workbench
+- `app/`: aplicación Android.
+- `wokwi_esp32/`: firmware, circuito y plantilla de configuración.
+- `gateway_raspberrypi/`: puente entre AWS IoT y Firestore.
+- `firebase/`: reglas de ejemplo.
+
+## Configuración
+
+1. Configura tu propio proyecto Firebase, activa autenticación por correo y contraseña y coloca tu `google-services.json` en `app/`.
+2. Publica y adapta las reglas de Firestore a tu proyecto y operadores autorizados.
+3. Copia `wokwi_esp32/config.example.h` a `config.h` y configura tu dispositivo y certificados AWS IoT.
+4. Crea un entorno Python `.venv` en la raíz, instala las dependencias de `gateway_raspberrypi/requirements.txt`, copia `gateway_raspberrypi/config.example.env` a `.env` dentro de `gateway_raspberrypi/` y configura una cuenta de servicio Firebase y credenciales AWS IoT independientes para el gateway.
+5. Compila el firmware con PlatformIO, inicia Wokwi, ejecuta el gateway e instala la aplicación Android.
+
+No publiques claves privadas, certificados de dispositivo, cuentas de servicio ni archivos de configuración locales. Cada instalación requiere sus propias credenciales y políticas apropiadas.
+
+## Alcance
+
+El DHT22 mide temperatura y humedad ambiental; el riego automático usa esta última como indicador simulado. El búfer del ESP32 está en RAM y se pierde al reiniciar. El checksum detecta alteraciones accidentales, pero no autentica el origen. La comunicación serial de Android se representa mediante el gateway y MQTT, no mediante USB directo.
+
+Las mediciones físicas de consumo y el vaciado del búfer tras una caída del nodo no se han verificado. El comportamiento depende de la configuración y permisos de los servicios externos.

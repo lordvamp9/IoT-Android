@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "operators": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": false } },
+    "telemetria": { ".read": "auth != null && root.child('operators').child(auth.uid).val() === true" },
+    "historial": { ".read": "auth != null && root.child('operators').child(auth.uid).val() === true" },
+    "actuadores": { ".read": "auth != null && root.child('operators').child(auth.uid).val() === true" },
+    "serial_comm": { ".read": "auth != null && root.child('operators').child(auth.uid).val() === true" },
+    "configuracion": {
+      ".read": "auth != null && root.child('operators').child(auth.uid).val() === true",
+      "modo_manual": { ".write": "auth != null && root.child('operators').child(auth.uid).val() === true" }
+    },
+    "commands": {
+      "$id": {
+        ".read": "auth != null && root.child('operators').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('operators').child(auth.uid).val() === true && !data.exists() && newData.child('requestedBy').val() === auth.uid && newData.child('id').val() === $id && newData.child('status').val() === 'PENDING'",
+        ".validate": "newData.hasChildren(['id','deviceId','name','value','createdAt','status','requestedBy']) && newData.child('deviceId').val() === 'ESP32_AGRO_01' && (newData.child('name').val() === 'VENT' || newData.child('name').val() === 'BOMBA' || newData.child('name').val() === 'PING') && (newData.child('value').val() === 0 || newData.child('value').val() === 1)"
+      }
+    }
+  }
+}

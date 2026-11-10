@@ -2,789 +2,271 @@ package com.inacap.iotclima
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.*
+import android.opengl.GLES20.*
+import android.opengl.GLSurfaceView
+import android.opengl.Matrix
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import android.view.animation.DecelerateInterpolator
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
 import kotlin.math.*
-import kotlin.random.Random
 
-/**
- * Vista personalizada interactiva en 3D / Isométrica desarrollada para vamp9 IoT.
- * Simula físicamente:
- * 1. Compuerta de ventilación motorizada (Servo SG90) con rotación tridimensional en perspectiva.
- * 2. Sistema de riego por aspersión (Bomba / Relé) con partículas cinéticas de agua y ondas en el suelo.
- * 3. Transición dinámica e inspección 3D al activar el Modo Manual.
- */
-class AgroSimulation3DView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) {
-
-    // Estados del sistema
-    var isManualMode: Boolean = false
-        private set
-    var isVentilationOpen: Boolean = false
-        private set
-    var isPumpActive: Boolean = false
-        private set
-
-    var exactTemperature: Double = 0.0
-        private set
-    var exactHumidity: Double = 0.0
-        private set
-
-    // Ángulos de rotación y cámara 3D
-    private var cameraRotX: Float = 22f      // Inclinación inicial
-    private var cameraRotY: Float = -15f     // Ángulo oblicuo inicial
-    private var baseRotY: Float = -15f
-    private var targetRotY: Float = -15f
-
-    // Estado animado de la compuerta (0.0 = cerrada, 1.0 = completamente abierta a ~85 grados)
-    private var gateOpenProgress: Float = 0f
+/** Native OpenGL scene: perspective camera, lit meshes and depth-tested architecture. */
+class AgroSimulation3DView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
+    @Volatile var isManualMode = false; private set
+    @Volatile var isVentilationOpen = false; private set
+    @Volatile var isPumpActive = false; private set
+    var exactTemperature = 0.0; private set
+    var exactHumidity = 0.0; private set
+    private val scene = GreenhouseRenderer()
     private var gateAnimator: ValueAnimator? = null
-
-    // Animación de pulso / modo manual
-    private var manualScanProgress: Float = 0f
-    private var manualScanAnimator: ValueAnimator? = null
-
-    // Partículas de agua para la bomba de riego
-    private class WaterDroplet(
-        var x: Float,
-        var y: Float,
-        var vx: Float,
-        var vy: Float,
-        var alpha: Int,
-        var maxLife: Float,
-        var currentLife: Float
-    )
-    private val droplets = mutableListOf<WaterDroplet>()
-    private val random = Random(System.currentTimeMillis())
-
-    // Partículas de brisa / flujo de aire para la ventilación
-    private class AirParticle(
-        var x: Float,
-        var y: Float,
-        var length: Float,
-        var speed: Float,
-        var alpha: Int
-    )
-    private val airParticles = mutableListOf<AirParticle>()
-
-    // Ondas en el suelo húmedo
-    private class SoilRipple(
-        var x: Float,
-        var y: Float,
-        var radius: Float,
-        var maxRadius: Float,
-        var alpha: Int
-    )
-    private val ripples = mutableListOf<SoilRipple>()
-
-    // Herramientas de dibujo
-    private val camera3D = Camera()
-    private val matrix3D = Matrix()
-
-    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#E2E8F0")
-        strokeWidth = 2f
-        style = Paint.Style.STROKE
+    private var lastX = 0f
+    private var lastY = 0f
+    private var moved = false
+    private var resumed = true
+    private val frames = object : Runnable {
+        override fun run() {
+            if (!isAttachedToWindow || !isShown || !resumed) return
+            requestRender()
+            if (isPumpActive || isVentilationOpen) postDelayed(this, 33)
+        }
     }
-    private val platformPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#F1F5F9")
-        style = Paint.Style.FILL
-    }
-    private val platformBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#CBD5E1")
-        strokeWidth = 3f
-        style = Paint.Style.STROKE
-    }
-    private val soilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#D97706")
-        style = Paint.Style.FILL
-    }
-    private val soilWetPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#92400E")
-        style = Paint.Style.FILL
-    }
-    private val plantStemPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#059669")
-        strokeWidth = 4f
-        strokeCap = Paint.Cap.ROUND
-        style = Paint.Style.STROKE
-    }
-    private val plantLeafPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#10B981")
-        style = Paint.Style.FILL
-    }
-    private val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#475569")
-        strokeWidth = 5f
-        strokeCap = Paint.Cap.ROUND
-        style = Paint.Style.STROKE
-    }
-    private val gatePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#0284C7")
-        style = Paint.Style.FILL
-    }
-    private val gateBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#0369A1")
-        strokeWidth = 3f
-        style = Paint.Style.STROKE
-    }
-    private val pipePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#64748B")
-        strokeWidth = 6f
-        strokeCap = Paint.Cap.ROUND
-        style = Paint.Style.STROKE
-    }
-    private val waterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#38BDF8")
-        strokeWidth = 3f
-        strokeCap = Paint.Cap.ROUND
-        style = Paint.Style.STROKE
-    }
-    private val airPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#60A5FA")
-        strokeWidth = 2.5f
-        strokeCap = Paint.Cap.ROUND
-        style = Paint.Style.STROKE
-    }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#0F172A")
-        textSize = 28f
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    private val badgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-    }
-    private val badgeBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
-    }
-    private val badgeTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 22f
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-
-    // Touch interaction para rotación manual ligera
-    private var lastTouchX = 0f
-    private var isDragging = false
-
     init {
-        // Inicializar partículas de brisa
-        for (i in 0..12) {
-            airParticles.add(
-                AirParticle(
-                    x = random.nextFloat() * 200f - 100f,
-                    y = random.nextFloat() * 100f - 50f,
-                    length = 20f + random.nextFloat() * 30f,
-                    speed = 3f + random.nextFloat() * 4f,
-                    alpha = 150 + random.nextInt(100)
-                )
-            )
-        }
+        setEGLContextClientVersion(2)
+        setEGLConfigChooser(8,8,8,8,24,0)
+        preserveEGLContextOnPause = true
+        setRenderer(scene)
+        renderMode = RENDERMODE_WHEN_DIRTY
+        contentDescription = "Invernadero 3D. Arrastra horizontalmente para girar y verticalmente para inclinar."
     }
-
-    /**
-     * Notifica el cambio de modo manual e inicia la animación de inspección 3D.
-     */
-    fun setManualMode(enabled: Boolean) {
-        if (this.isManualMode == enabled) return
-        this.isManualMode = enabled
-
-        // Animación suave de la cámara al entrar en modo manual
-        val startRot = cameraRotY
-        val targetRot = if (enabled) 20f else -15f
-        baseRotY = targetRot
-
-        val anim = ValueAnimator.ofFloat(startRot, targetRot)
-        anim.duration = 750
-        anim.interpolator = DecelerateInterpolator()
-        anim.addUpdateListener { va ->
-            cameraRotY = va.animatedValue as Float
-            invalidate()
-        }
-        anim.start()
-
-        // Pulso de escaneo 3D
-        if (enabled) {
-            manualScanAnimator?.cancel()
-            manualScanAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 1200
-                interpolator = DecelerateInterpolator()
-                addUpdateListener { va ->
-                    manualScanProgress = va.animatedValue as Float
-                    invalidate()
-                }
-                start()
-            }
-        }
-
-        invalidate()
+    fun setManualMode(enabled: Boolean) { isManualMode=enabled; requestRender() }
+    fun updateTelemetry(temperature: Double, humidity: Double) {
+        exactTemperature=temperature; exactHumidity=humidity; requestRender()
     }
-
-    /**
-     * Controla la apertura física del servo SG90 con animación suave.
-     */
+    fun setPump(active: Boolean) { isPumpActive=active; scene.pump=active; refreshFrames() }
     fun setVentilation(open: Boolean) {
-        if (this.isVentilationOpen == open) return
-        this.isVentilationOpen = open
-
-        gateAnimator?.cancel()
-        val target = if (open) 1f else 0f
-        gateAnimator = ValueAnimator.ofFloat(gateOpenProgress, target).apply {
-            duration = 650
-            interpolator = DecelerateInterpolator()
-            addUpdateListener { va ->
-                gateOpenProgress = va.animatedValue as Float
-                invalidate()
-            }
+        if (isVentilationOpen==open) return
+        isVentilationOpen=open; gateAnimator?.cancel()
+        gateAnimator=ValueAnimator.ofFloat(scene.gate,if(open) 1f else 0f).apply {
+            duration=800
+            addUpdateListener { scene.gate=it.animatedValue as Float; requestRender() }
             start()
         }
+        refreshFrames()
     }
-
-    /**
-     * Activa o detiene la simulación de bomba de riego y partículas de agua.
-     */
-    fun setPump(active: Boolean) {
-        this.isPumpActive = active
-        if (!active) {
-            droplets.clear()
-            ripples.clear()
-        }
-        invalidate()
-    }
-
-    /**
-     * Actualiza la telemetría exacta en la vista para reflejarla en los badges y suelo.
-     */
-    fun updateTelemetry(temperature: Double, humidity: Double) {
-        this.exactTemperature = temperature
-        this.exactHumidity = humidity
-        invalidate()
-    }
-
+    private fun refreshFrames() { removeCallbacks(frames); post(frames) }
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
+        when(event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                lastTouchX = event.x
-                isDragging = true
-                return true
+                lastX=event.x;lastY=event.y;moved=false
+                // Keep the entire orbit gesture inside the scene, including all ancestors.
+                parent?.requestDisallowInterceptTouchEvent(true); return true
             }
             MotionEvent.ACTION_MOVE -> {
-                if (isDragging) {
-                    val dx = event.x - lastTouchX
-                    lastTouchX = event.x
-                    // Limitar rotación interactiva para mantener perspectiva cómoda
-                    cameraRotY = (cameraRotY + dx * 0.25f).coerceIn(-35f, 35f)
-                    invalidate()
-                }
-                return true
+                val dx=event.x-lastX;val dy=event.y-lastY
+                moved=moved || abs(dx)+abs(dy)>3f
+                scene.yaw += dx/max(width,1)*3.2f
+                scene.pitch=(scene.pitch+dy/max(height,1)*1.2f).coerceIn(.2f,1.05f)
+                lastX=event.x;lastY=event.y;requestRender();return true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                isDragging = false
-                // Regresar suavemente al ángulo base
-                val anim = ValueAnimator.ofFloat(cameraRotY, baseRotY).apply {
-                    duration = 400
-                    interpolator = DecelerateInterpolator()
-                    addUpdateListener { va ->
-                        cameraRotY = va.animatedValue as Float
-                        invalidate()
+            MotionEvent.ACTION_UP -> { parent?.requestDisallowInterceptTouchEvent(false);if(!moved)performClick();return true }
+            MotionEvent.ACTION_CANCEL -> { parent?.requestDisallowInterceptTouchEvent(false);return true }
+        }
+        return true
+    }
+    override fun performClick(): Boolean { super.performClick();return true }
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        if (visibility==View.VISIBLE && !resumed) { onResume();resumed=true;refreshFrames() }
+        else if (visibility!=View.VISIBLE && resumed) { removeCallbacks(frames);onPause();resumed=false }
+    }
+    override fun onAttachedToWindow() { super.onAttachedToWindow();if(!resumed){onResume();resumed=true};refreshFrames() }
+    override fun onDetachedFromWindow() { removeCallbacks(frames);gateAnimator?.cancel();super.onDetachedFromWindow() }
+
+    private class GreenhouseRenderer : Renderer {
+        @Volatile var yaw=.65f
+        @Volatile var pitch=.52f
+        @Volatile var gate=0f
+        @Volatile var pump=false
+        private var program=0
+        private var pos=0;private var normal=0;private var mvpLoc=0;private var modelLoc=0;private var colorLoc=0
+        private var normalLoc=0;private var eyeLoc=0
+        private lateinit var box: Mesh
+        private lateinit var ball: Mesh
+        private val projection=FloatArray(16)
+        private val view=FloatArray(16)
+        private val vp=FloatArray(16)
+        private val model=FloatArray(16)
+        private val mvp=FloatArray(16)
+        private val inverse=FloatArray(16)
+        private val normalMatrix=FloatArray(16)
+        private data class Item(val x:Float,val y:Float,val z:Float,val sx:Float,val sy:Float,val sz:Float,
+                                val color:FloatArray,val ry:Float=0f,val rz:Float=0f,val round:Boolean=false,val rx:Float=0f)
+        private val architecture=ArrayList<Item>()
+        private fun color(hex:Int,alpha:Float=1f)=floatArrayOf((hex shr 16 and 255)/255f,(hex shr 8 and 255)/255f,(hex and 255)/255f,alpha)
+        private fun part(x:Float,y:Float,z:Float,sx:Float,sy:Float,sz:Float,c:Int,ry:Float=0f,rz:Float=0f,round:Boolean=false) {
+            architecture.add(Item(x,y,z,sx,sy,sz,color(c),ry,rz,round))
+        }
+        override fun onSurfaceCreated(gl:GL10?,config:EGLConfig?) {
+            val vertex="""attribute vec3 aPosition; attribute vec3 aNormal; uniform mat4 uMvp; uniform mat4 uModel; uniform mat4 uNormal;
+                varying vec3 vNormal; varying vec3 vWorld;
+                void main(){vWorld=(uModel*vec4(aPosition,1.0)).xyz;vNormal=normalize(mat3(uNormal)*aNormal);gl_Position=uMvp*vec4(aPosition,1.0);}"""
+            val fragment="""precision mediump float;uniform vec4 uColor;uniform vec3 uEye;varying vec3 vNormal;varying vec3 vWorld;
+                void main(){vec3 n=normalize(vNormal);vec3 l=normalize(vec3(-0.6,1.0,0.7));float d=max(dot(n,l),0.0);
+                vec3 e=normalize(uEye-vWorld);float rim=pow(1.0-abs(dot(n,e)),3.0)*0.07;
+                float spec=pow(max(dot(n,normalize(l+e)),0.0),42.0)*0.17;
+                vec3 col=uColor.rgb*(0.42+0.58*d)+vec3(rim+spec);
+                gl_FragColor=vec4(col,uColor.a);}"""
+            fun shader(type:Int,source:String):Int {val id=glCreateShader(type);glShaderSource(id,source);glCompileShader(id);val ok=IntArray(1);glGetShaderiv(id,GL_COMPILE_STATUS,ok,0);check(ok[0]!=0){glGetShaderInfoLog(id)};return id}
+            program=glCreateProgram();val vs=shader(GL_VERTEX_SHADER,vertex);val fs=shader(GL_FRAGMENT_SHADER,fragment)
+            glAttachShader(program,vs);glAttachShader(program,fs);glLinkProgram(program)
+            val linked=IntArray(1);glGetProgramiv(program,GL_LINK_STATUS,linked,0);check(linked[0]!=0){glGetProgramInfoLog(program)}
+            glDeleteShader(vs);glDeleteShader(fs)
+            pos=glGetAttribLocation(program,"aPosition");normal=glGetAttribLocation(program,"aNormal")
+            mvpLoc=glGetUniformLocation(program,"uMvp");modelLoc=glGetUniformLocation(program,"uModel");colorLoc=glGetUniformLocation(program,"uColor")
+            normalLoc=glGetUniformLocation(program,"uNormal");eyeLoc=glGetUniformLocation(program,"uEye")
+            box=Mesh.cube();ball=Mesh.sphere();buildArchitecture()
+            glEnable(GL_DEPTH_TEST);glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
+            glClearColor(.035f,.075f,.105f,1f)
+        }
+        private fun buildArchitecture() {
+            architecture.clear()
+            part(0f,-.25f,0f,5.7f,.28f,3.8f,0x244858)
+            part(0f,-.08f,0f,5.5f,.1f,3.6f,0xA9C4C7)
+            // Walkways and raised timber beds with inset soil, rim and repeated boards.
+            for(row in -1..1) {
+                val z=row*1.05f
+                part(-.15f,.07f,z,4.15f,.19f,.76f,0x755845)
+                part(-.15f,.18f,z,4.02f,.025f,.64f,0x473F30)
+                for(side in listOf(-1,1)) part(-.15f,.2f,z+side*.37f,4.2f,.08f,.055f,0xAF8A62)
+                for(j in 0..14) part(-2.15f+j*.285f,.08f,z+.39f,.017f,.19f,.015f,0x493C32)
+                for(j in 0..6) {
+                    val x=-1.9f+j*.58f
+                    part(x,.37f,z,.028f,.38f,.028f,0x4C8B51)
+                    // Volumetric elliptical leaves on four levels, each with a central vein.
+                    for(leaf in 0..5) {
+                        val a=leaf*137.5f+j*13f;val rad=a*PI.toFloat()/180
+                        val y=.31f+leaf*.052f
+                        part(x+cos(rad)*.105f,y,z+sin(rad)*.105f,.3f,.065f,.13f,
+                            if(leaf%2==0)0x42B981 else 0x84CE8C,ry=-a,rz=if(cos(rad)>0)22f else -22f,round=true)
                     }
                 }
-                anim.start()
-                return true
             }
-        }
-        return super.onTouchEvent(event)
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-
-        val w = width.toFloat()
-        val h = height.toFloat()
-        if (w <= 0 || h <= 0) return
-
-        // 1. Fondo suave con gradiente moderno claro
-        val bgShader = LinearGradient(
-            0f, 0f, 0f, h,
-            intArrayOf(Color.parseColor("#F8FAFC"), Color.parseColor("#EFF6FF")),
-            null,
-            Shader.TileMode.CLAMP
-        )
-        bgPaint.shader = bgShader
-        canvas.drawRoundRect(0f, 0f, w, h, 32f, 32f, bgPaint)
-
-        // 2. Proyección y transformación 3D centrada
-        canvas.save()
-        val centerX = w * 0.5f
-        val centerY = h * 0.52f
-
-        camera3D.save()
-        camera3D.rotateX(cameraRotX)
-        camera3D.rotateY(cameraRotY)
-        camera3D.getMatrix(matrix3D)
-        camera3D.restore()
-
-        matrix3D.preTranslate(-centerX, -centerY)
-        matrix3D.postTranslate(centerX, centerY)
-        canvas.concat(matrix3D)
-
-        // Dibujar componentes de la escena 3D
-        drawPodiumAndGrid(canvas, centerX, centerY)
-        drawCropsAndSoil(canvas, centerX, centerY)
-        drawVentilationServo(canvas, centerX, centerY)
-        drawIrrigationSystem(canvas, centerX, centerY)
-
-        canvas.restore()
-
-        // 3. HUD Overlay 2D (Badges de estado en tiempo real, etiquetas limpias)
-        drawHudOverlay(canvas, w, h)
-
-        // Actualizar bucle de animación continua si hay actuadores activos
-        var needRedraw = false
-
-        if (isPumpActive) {
-            updateDropletsAndRipples(centerX, centerY)
-            needRedraw = true
-        }
-
-        if (gateOpenProgress > 0.05f) {
-            updateAirParticles()
-            needRedraw = true
-        }
-
-        if (isManualMode && manualScanProgress < 1f) {
-            needRedraw = true
-        }
-
-        if (needRedraw) {
-            postInvalidateOnAnimation()
-        }
-    }
-
-    /**
-     * Dibuja el podio base y cuadrícula tecnológica isométrica
-     */
-    private fun drawPodiumAndGrid(canvas: Canvas, cx: Float, cy: Float) {
-        val pw = 280f
-        val ph = 180f
-        val depth = 28f
-
-        // Sombra suave inferior
-        val shadowPath = Path().apply {
-            moveTo(cx - pw, cy)
-            lineTo(cx, cy - ph * 0.6f)
-            lineTo(cx + pw, cy)
-            lineTo(cx, cy + ph * 0.6f + depth)
-            close()
-        }
-        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#15000000")
-            maskFilter = BlurMaskFilter(16f, BlurMaskFilter.Blur.NORMAL)
-        }
-        canvas.drawPath(shadowPath, shadowPaint)
-
-        // Borde lateral del podio (efecto volumen 3D)
-        val edgePath = Path().apply {
-            moveTo(cx - pw, cy)
-            lineTo(cx, cy + ph * 0.6f)
-            lineTo(cx + pw, cy)
-            lineTo(cx + pw, cy + depth)
-            lineTo(cx, cy + ph * 0.6f + depth)
-            lineTo(cx - pw, cy + depth)
-            close()
-        }
-        val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#E2E8F0")
-            style = Paint.Style.FILL
-        }
-        canvas.drawPath(edgePath, edgePaint)
-
-        // Superficie superior del podio
-        val topPath = Path().apply {
-            moveTo(cx - pw, cy)
-            lineTo(cx, cy - ph * 0.6f)
-            lineTo(cx + pw, cy)
-            lineTo(cx, cy + ph * 0.6f)
-            close()
-        }
-        canvas.drawPath(topPath, platformPaint)
-        canvas.drawPath(topPath, platformBorderPaint)
-
-        // Cuadrícula tecnológica
-        val steps = 4
-        for (i in 1 until steps) {
-            val t = i.toFloat() / steps
-            // Líneas oblicuas 1
-            val x1 = cx - pw * (1 - t)
-            val y1 = cy - (ph * 0.6f) * t
-            val x2 = cx + pw * t
-            val y2 = cy + (ph * 0.6f) * (1 - t)
-            canvas.drawLine(x1, y1, x2, y2, gridPaint)
-
-            // Líneas oblicuas 2
-            val x3 = cx - pw * t
-            val y3 = cy + (ph * 0.6f) * (1 - t)
-            val x4 = cx + pw * (1 - t)
-            val y4 = cy - (ph * 0.6f) * t
-            canvas.drawLine(x3, y3, x4, y4, gridPaint)
-        }
-
-        // Si el modo manual está activado, dibujar anillo de escaneo
-        if (isManualMode && manualScanProgress in 0.01f..0.99f) {
-            val scanPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#7C3AED")
-                strokeWidth = 3f
-                style = Paint.Style.STROKE
-                alpha = ((1f - manualScanProgress) * 200).toInt()
-            }
-            val scanR = pw * manualScanProgress
-            canvas.drawOval(cx - scanR, cy - (ph * 0.6f * manualScanProgress), cx + scanR, cy + (ph * 0.6f * manualScanProgress), scanPaint)
-        }
-    }
-
-    /**
-     * Dibuja el suelo de cultivo agrícola y las plantas
-     */
-    private fun drawCropsAndSoil(canvas: Canvas, cx: Float, cy: Float) {
-        val sw = 180f
-        val sh = 100f
-
-        // Cama de siembra
-        val soilPath = Path().apply {
-            moveTo(cx - sw, cy)
-            lineTo(cx, cy - sh * 0.6f)
-            lineTo(cx + sw, cy)
-            lineTo(cx, cy + sh * 0.6f)
-            close()
-        }
-
-        // Tono del suelo cambia si la bomba está regando o si la humedad es alta
-        val isMoist = isPumpActive || exactHumidity > 60.0
-        val currentSoilPaint = if (isMoist) soilWetPaint else soilPaint
-        canvas.drawPath(soilPath, currentSoilPaint)
-
-        // Ondas de agua en el suelo cuando la bomba está activa
-        if (isPumpActive && ripples.isNotEmpty()) {
-            val rPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#38BDF8")
-                style = Paint.Style.STROKE
-                strokeWidth = 2f
-            }
-            for (rip in ripples) {
-                rPaint.alpha = rip.alpha
-                canvas.drawOval(
-                    rip.x - rip.radius, rip.y - rip.radius * 0.4f,
-                    rip.x + rip.radius, rip.y + rip.radius * 0.4f,
-                    rPaint
-                )
-            }
-        }
-
-        // Dibujar pequeños brotes de cultivo (plantines) en perspectiva
-        val plantPositions = listOf(
-            Pair(cx - 70f, cy - 10f),
-            Pair(cx - 20f, cy + 20f),
-            Pair(cx + 40f, cy - 20f),
-            Pair(cx + 80f, cy + 10f),
-            Pair(cx + 10f, cy - 35f)
-        )
-
-        for ((px, py) in plantPositions) {
-            // Tallo
-            canvas.drawLine(px, py, px, py - 26f, plantStemPaint)
-            // Hoja izquierda
-            val leafLeft = Path().apply {
-                moveTo(px, py - 18f)
-                quadTo(px - 14f, py - 24f, px - 12f, py - 16f)
-                quadTo(px - 4f, py - 14f, px, py - 18f)
-                close()
-            }
-            canvas.drawPath(leafLeft, plantLeafPaint)
-            // Hoja derecha
-            val leafRight = Path().apply {
-                moveTo(px, py - 22f)
-                quadTo(px + 14f, py - 28f, px + 12f, py - 20f)
-                quadTo(px + 4f, py - 18f, px, py - 22f)
-                close()
-            }
-            canvas.drawPath(leafRight, plantLeafPaint)
-        }
-    }
-
-    /**
-     * Dibuja la compuerta de ventilación 3D impulsada por el Servo SG90
-     */
-    private fun drawVentilationServo(canvas: Canvas, cx: Float, cy: Float) {
-        // Estructura de soporte de la compuerta en la parte superior izquierda
-        val gateX = cx - 110f
-        val gateY = cy - 130f
-        val gateWidth = 110f
-        val gateHeight = 70f
-
-        // Marco exterior
-        canvas.drawRect(gateX, gateY, gateX + gateWidth, gateY + gateHeight, framePaint)
-
-        // Servomotor SG90 (bloque azul de micro-servo en la esquina superior)
-        val servoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#2563EB")
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(gateX - 22f, gateY + 10f, gateX + 2f, gateY + 44f, 6f, 6f, servoPaint)
-        // Eje de rotor blanco
-        val servoGearPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            style = Paint.Style.FILL
-        }
-        canvas.drawCircle(gateX - 8f, gateY + 27f, 6f, servoGearPaint)
-
-        // Compuerta giratoria con rotación 3D
-        // gateOpenProgress va de 0f (cerrada plana) a 1f (abierta a ~80°)
-        val angleDeg = gateOpenProgress * 80f
-        val flapPath = Path()
-
-        // Calcular deformación en perspectiva de la compuerta que pivota en la bisagra superior
-        val topY = gateY + 4f
-        val bottomY = gateY + gateHeight - 4f
-        val lift = (bottomY - topY) * (1f - cos(Math.toRadians(angleDeg.toDouble()))).toFloat()
-        val tiltOffset = sin(Math.toRadians(angleDeg.toDouble())).toFloat() * 35f
-
-        val leftX = gateX + 6f
-        val rightX = gateX + gateWidth - 6f
-
-        flapPath.moveTo(leftX, topY)
-        flapPath.lineTo(rightX, topY)
-        flapPath.lineTo(rightX + tiltOffset, bottomY - lift)
-        flapPath.lineTo(leftX + tiltOffset, bottomY - lift)
-        flapPath.close()
-
-        // Color de la compuerta con sombreado dinámico según el ángulo
-        gatePaint.color = if (isVentilationOpen) Color.parseColor("#38BDF8") else Color.parseColor("#64748B")
-        gatePaint.alpha = 220
-        canvas.drawPath(flapPath, gatePaint)
-        canvas.drawPath(flapPath, gateBorderPaint)
-
-        // Líneas de ventilación / lamas
-        val steps = 3
-        for (i in 1..steps) {
-            val t = i.toFloat() / (steps + 1)
-            val currentY = topY + (bottomY - lift - topY) * t
-            val curLeftX = leftX + tiltOffset * t
-            val curRightX = rightX + tiltOffset * t
-            canvas.drawLine(curLeftX, currentY, curRightX, currentY, gateBorderPaint)
-        }
-
-        // Si la compuerta está abierta, dibujar flujo de aire saliendo
-        if (gateOpenProgress > 0.1f) {
-            for (p in airParticles) {
-                airPaint.alpha = (p.alpha * gateOpenProgress).toInt()
-                canvas.drawLine(
-                    gateX + gateWidth * 0.5f + p.x,
-                    gateY + gateHeight * 0.5f + p.y,
-                    gateX + gateWidth * 0.5f + p.x + p.length,
-                    gateY + gateHeight * 0.5f + p.y - 8f,
-                    airPaint
-                )
-            }
-        }
-    }
-
-    /**
-     * Dibuja el sistema de riego (tubería, toberas de aspersión y partículas de agua)
-     */
-    private fun drawIrrigationSystem(canvas: Canvas, cx: Float, cy: Float) {
-        val pipeStartY = cy - 80f
-        val pipeStartX = cx - 90f
-        val pipeEndX = cx + 110f
-
-        // Tubería principal superior
-        canvas.drawLine(pipeStartX, pipeStartY, pipeEndX, pipeStartY, pipePaint)
-
-        // Toberas de aspersión (3 aspersores)
-        val nozzles = listOf(
-            Pair(cx - 50f, pipeStartY),
-            Pair(cx + 10f, pipeStartY),
-            Pair(cx + 70f, pipeStartY)
-        )
-
-        val nozzlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#1E293B")
-            style = Paint.Style.FILL
-        }
-
-        for ((nx, ny) in nozzles) {
-            canvas.drawRect(nx - 4f, ny, nx + 4f, ny + 10f, nozzlePaint)
-
-            // Si la bomba está activa, dibujar aspersión de agua
-            if (isPumpActive) {
-                // Rociador de agua cónico
-                val sprayPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = Color.parseColor("#7DD3FC")
-                    style = Paint.Style.STROKE
-                    strokeWidth = 1.5f
-                    alpha = 130
+            // Columns, pitched rafters, roof purlins and horizontal bracing.
+            for(z in listOf(-1.65f,0f,1.65f)) {
+                for(x in listOf(-2.55f,2.55f)) {
+                    part(x,1.15f,z,.065f,2.3f,.065f,0x96BCC7)
+                    part(x,.05f,z,.17f,.1f,.17f,0x3C6579)
                 }
-                for (a in -2..2) {
-                    val angleRad = Math.toRadians((a * 15.0) + 90.0)
-                    val ex = nx + (cos(angleRad) * 45f).toFloat()
-                    val ey = ny + 10f + (sin(angleRad) * 45f).toFloat()
-                    canvas.drawLine(nx, ny + 10f, ex, ey, sprayPaint)
+                val length=sqrt(2.55f*2.55f+.85f*.85f)
+                val angle=atan2(.85f,2.55f)*180f/PI.toFloat()
+                part(-1.275f,2.725f,z,length,.065f,.065f,0xB9D3DB,rz=angle)
+                part(1.275f,2.725f,z,length,.065f,.065f,0xB9D3DB,rz=-angle)
+            }
+            for(x in listOf(-2.55f,-1.3f,0f,1.3f,2.55f)) {
+                val y=3.15f-abs(x)/2.55f*.85f
+                part(x,y,0f,.045f,.045f,3.36f,0x6C96A7)
+            }
+            for(x in listOf(-2.55f,2.55f)) for(y in listOf(.65f,1.6f,2.3f)) part(x,y,0f,.035f,.035f,3.3f,0x658C9D)
+            // Rear wall vent housing and visible blue SG90 unit.
+            part(-1.2f,1.56f,-1.64f,1.4f,.9f,.07f,0x27485C)
+            part(-2f,1.54f,-1.57f,.18f,.32f,.22f,0x437DC6)
+            part(-1.97f,1.54f,-1.4f,.13f,.04f,.04f,0xE8EDEA)
+            // Water tank, pump unit and overhead irrigation manifold.
+            part(2.18f,.43f,.9f,.46f,.85f,.62f,0x2B998F)
+            part(2.18f,.89f,.9f,.49f,.09f,.64f,0xB9DAD9)
+            part(2.2f,1.37f,.9f,.055f,.95f,.055f,0x87B8CD)
+            part(.05f,1.85f,.1f,4.35f,.06f,.06f,0x98C8D4)
+            part(2.2f,1.85f,.5f,.055f,.055f,.85f,0x98C8D4)
+            for(x in listOf(-1.4f,0f,1.4f)) part(x,1.79f,.1f,.11f,.1f,.11f,0x244F68)
+            part(2.46f,.66f,-.7f,.16f,.5f,.42f,0x315775)
+            for(i in 0..2) part(2.56f,.78f-i*.1f,-.7f,.02f,.035f,.035f,0x74E9BD)
+        }
+        override fun onSurfaceChanged(gl:GL10?,w:Int,h:Int) {glViewport(0,0,w,h);Matrix.perspectiveM(projection,0,39f,w.toFloat()/max(h,1),.1f,60f)}
+        private fun draw(item:Item) {
+            Matrix.setIdentityM(model,0);Matrix.translateM(model,0,item.x,item.y,item.z)
+            Matrix.rotateM(model,0,item.ry,0f,1f,0f);Matrix.rotateM(model,0,item.rz,0f,0f,1f)
+            Matrix.rotateM(model,0,item.rx,1f,0f,0f);Matrix.scaleM(model,0,item.sx,item.sy,item.sz)
+            Matrix.multiplyMM(mvp,0,vp,0,model,0)
+            Matrix.invertM(inverse,0,model,0);Matrix.transposeM(normalMatrix,0,inverse,0)
+            glUniformMatrix4fv(normalLoc,1,false,normalMatrix,0)
+            glUniformMatrix4fv(mvpLoc,1,false,mvp,0);glUniformMatrix4fv(modelLoc,1,false,model,0);glUniform4fv(colorLoc,1,item.color,0)
+            val mesh=if(item.round) ball else box
+            mesh.data.position(0);glVertexAttribPointer(pos,3,GL_FLOAT,false,24,mesh.data);glEnableVertexAttribArray(pos)
+            mesh.data.position(3);glVertexAttribPointer(normal,3,GL_FLOAT,false,24,mesh.data);glEnableVertexAttribArray(normal)
+            glDrawArrays(GL_TRIANGLES,0,mesh.count)
+        }
+        override fun onDrawFrame(gl:GL10?) {
+            glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);glUseProgram(program)
+            val distance=10.6f;val cy=distance*sin(pitch);val r=distance*cos(pitch)
+            val ex=r*sin(yaw);val ez=r*cos(yaw)
+            glUniform3f(eyeLoc,ex,cy+1f,ez)
+            Matrix.setLookAtM(view,0,ex,cy+1f,ez,0f,1.15f,0f,0f,1f,0f);Matrix.multiplyMM(vp,0,projection,0,view,0)
+            draw(Item(0f,-.48f,0f,200f,.06f,200f,color(0x102633)))
+            draw(Item(0f,-.43f,0f,6.4f,.035f,4.5f,color(0x091A24),round=true))
+            architecture.forEach(::draw)
+            for(i in 0..5) draw(Item(-1.2f,1.2f+i*.14f,-1.58f,1.28f,.115f,.035f,color(0x9CD8E3),rx=gate*80f))
+            val t=SystemClock.uptimeMillis()/1000f
+            if (gate > .03f) {
+                // Long, curved airflow streaks travel horizontally from the open vent.
+                // Their narrow ribbons and lateral motion distinguish them from falling water.
+                for (stream in 0 until 7) {
+                    val lane = stream / 6f
+                    val head = (t * .5f + stream * .23f) % 1.35f
+                    val x = -1.72f + (stream % 4) * .32f
+                    for (segment in 0 until 8) {
+                        val phase = head - segment * .035f
+                        if (phase <= 0f || phase >= 1f) continue
+                        val z = -1.45f + phase * 2.65f
+                        val wave = phase * 8.5f + stream * .8f
+                        val y = 1.27f + lane * .5f + sin(wave) * .075f
+                        val slope = cos(wave) * .075f * 8.5f / 2.65f
+                        val angle = -atan(slope) * 180f / PI.toFloat()
+                        val fade = min(phase * 5f, (1f - phase) * 5f).coerceIn(0f, 1f)
+                        val tail = (1f - segment / 8f)
+                        draw(Item(x, y, z, .014f, .014f, .115f,
+                            color(0xDDFEFF, gate * fade * tail * .8f), rx = angle))
+                    }
+                }
+            }
+            if(pump) for(x in listOf(-1.4f,0f,1.4f)) for(i in 0..19) {
+                val f=(t*.6f+i/20f)%1f;val a=i*2.39996f
+                draw(Item(x+cos(a)*f*.55f,1.72f-f*1.5f,.1f+sin(a)*f*.6f,.025f,.065f,.025f,color(0x8EE4FF,.85f),round=true))
+            }
+            // Transparent glass is sorted back-to-front and never writes the depth buffer.
+            val glass=listOf(
+                Item(-2.55f,1.15f,0f,.012f,2.25f,3.25f,color(0x7ED6DD,.08f)),
+                Item(2.55f,1.15f,0f,.012f,2.25f,3.25f,color(0x7ED6DD,.08f)),
+                Item(0f,1.15f,-1.65f,5.05f,2.25f,.012f,color(0x7ED6DD,.06f)),
+                Item(-1.275f,2.725f,0f,2.68f,.01f,3.3f,color(0xA5E5ED,.09f),rz=18.43f),
+                Item(1.275f,2.725f,0f,2.68f,.01f,3.3f,color(0xA5E5ED,.09f),rz=-18.43f))
+            glDepthMask(false)
+            glass.sortedByDescending { (it.x-ex).pow(2)+(it.y-cy-1).pow(2)+(it.z-ez).pow(2) }.forEach(::draw)
+            glDepthMask(true)
+        }
+        private class Mesh(values:FloatArray) {
+            val count=values.size/6
+            val data=ByteBuffer.allocateDirect(values.size*4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply {put(values);position(0)}
+            companion object {
+                fun cube():Mesh {
+                    val out=ArrayList<Float>()
+                    val vertices=arrayOf(floatArrayOf(-.5f,-.5f,-.5f),floatArrayOf(.5f,-.5f,-.5f),floatArrayOf(.5f,.5f,-.5f),floatArrayOf(-.5f,.5f,-.5f),floatArrayOf(-.5f,-.5f,.5f),floatArrayOf(.5f,-.5f,.5f),floatArrayOf(.5f,.5f,.5f),floatArrayOf(-.5f,.5f,.5f))
+                    val faces=arrayOf(intArrayOf(0,1,2,3),intArrayOf(4,7,6,5),intArrayOf(0,4,5,1),intArrayOf(3,2,6,7),intArrayOf(0,3,7,4),intArrayOf(1,5,6,2))
+                    val normals=arrayOf(floatArrayOf(0f,0f,-1f),floatArrayOf(0f,0f,1f),floatArrayOf(0f,-1f,0f),floatArrayOf(0f,1f,0f),floatArrayOf(-1f,0f,0f),floatArrayOf(1f,0f,0f))
+                    for((i,f) in faces.withIndex()) for(j in intArrayOf(0,1,2,0,2,3)) {vertices[f[j]].forEach(out::add);normals[i].forEach(out::add)}
+                    return Mesh(out.toFloatArray())
+                }
+                fun sphere():Mesh {
+                    val out=ArrayList<Float>()
+                    fun vertex(lat:Int,lon:Int) {val a=PI*lat/8;val b=2*PI*lon/12;val x=(sin(a)*cos(b)).toFloat();val y=cos(a).toFloat();val z=(sin(a)*sin(b)).toFloat();out.addAll(listOf(x*.5f,y*.5f,z*.5f,x,y,z))}
+                    for(i in 0 until 8) for(j in 0 until 12) {vertex(i,j);vertex(i+1,j);vertex(i+1,j+1);vertex(i,j);vertex(i+1,j+1);vertex(i,j+1)}
+                    return Mesh(out.toFloatArray())
                 }
             }
         }
-
-        // Gotas de agua cayendo con física
-        if (isPumpActive && droplets.isNotEmpty()) {
-            for (d in droplets) {
-                waterPaint.alpha = d.alpha
-                canvas.drawCircle(d.x, d.y, 3.5f, waterPaint)
-            }
-        }
-    }
-
-    /**
-     * Actualiza la simulación física de gotas de agua y ondas en el suelo
-     */
-    private fun updateDropletsAndRipples(cx: Float, cy: Float) {
-        val pipeStartY = cy - 80f
-        val nozzles = listOf(cx - 50f, cx + 10f, cx + 70f)
-
-        // Generar nuevas gotas
-        if (droplets.size < 40 && random.nextFloat() < 0.6f) {
-            val nx = nozzles[random.nextInt(nozzles.size)]
-            val vx = (random.nextFloat() - 0.5f) * 3f
-            val vy = 3f + random.nextFloat() * 4f
-            droplets.add(
-                WaterDroplet(
-                    x = nx,
-                    y = pipeStartY + 10f,
-                    vx = vx,
-                    vy = vy,
-                    alpha = 230,
-                    maxLife = 35f,
-                    currentLife = 0f
-                )
-            )
-        }
-
-        // Mover gotas
-        val it = droplets.iterator()
-        while (it.hasNext()) {
-            val d = it.next()
-            d.x += d.vx
-            d.y += d.vy
-            d.vy += 0.35f // Gravedad
-            d.currentLife += 1f
-
-            // Impacto en el suelo
-            if (d.y >= cy + 10f || d.currentLife >= d.maxLife) {
-                // Crear onda de impacto
-                if (ripples.size < 15) {
-                    ripples.add(
-                        SoilRipple(
-                            x = d.x,
-                            y = d.y,
-                            radius = 4f,
-                            maxRadius = 24f,
-                            alpha = 180
-                        )
-                    )
-                }
-                it.remove()
-            }
-        }
-
-        // Actualizar ondas
-        val rit = ripples.iterator()
-        while (rit.hasNext()) {
-            val r = rit.next()
-            r.radius += 1.2f
-            r.alpha = ((1f - (r.radius / r.maxRadius)) * 180).toInt().coerceAtLeast(0)
-            if (r.radius >= r.maxRadius || r.alpha <= 0) {
-                rit.remove()
-            }
-        }
-    }
-
-    /**
-     * Actualiza la posición de las partículas de brisa
-     */
-    private fun updateAirParticles() {
-        for (p in airParticles) {
-            p.x += p.speed
-            if (p.x > 140f) {
-                p.x = -80f
-                p.y = (random.nextFloat() * 80f) - 40f
-            }
-        }
-    }
-
-    /**
-     * Dibuja el HUD 2D superior con los badges de estado para Servo, Bomba y Modo
-     */
-    private fun drawHudOverlay(canvas: Canvas, w: Float, h: Float) {
-        val pad = 24f
-
-        // 1. Badge superior izquierdo: MODO ACTUAL
-        val modeText = if (isManualMode) "MODO MANUAL ACTIVO" else "MODO AUTOMÁTICO (IOT)"
-        val modeColor = if (isManualMode) Color.parseColor("#7C3AED") else Color.parseColor("#059669")
-        val modeBg = if (isManualMode) Color.parseColor("#F5F3FF") else Color.parseColor("#ECFDF5")
-
-        badgePaint.color = modeBg
-        badgeBorderPaint.color = modeColor
-        val badgeW = badgeTextPaint.measureText(modeText) + 36f
-        val badgeRect = RectF(pad, pad, pad + badgeW, pad + 38f)
-        canvas.drawRoundRect(badgeRect, 19f, 19f, badgePaint)
-        canvas.drawRoundRect(badgeRect, 19f, 19f, badgeBorderPaint)
-
-        badgeTextPaint.color = modeColor
-        canvas.drawText(modeText, pad + 18f, pad + 27f, badgeTextPaint)
-
-        // 2. Indicador 3D / Perspectiva badge
-        val hintText = "VISTA 3D • ARRASTRA PARA INSPECCIONAR"
-        val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#64748B")
-            textSize = 20f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        }
-        val hintW = hintPaint.measureText(hintText)
-        canvas.drawText(hintText, w - pad - hintW, pad + 27f, hintPaint)
-
-        // 3. Badges inferiores en tarjeta (Estado físico de los 2 actuadores)
-        val bottomY = h - pad - 36f
-
-        // Badge Servo
-        val servoLabel = if (isVentilationOpen) "SERVO SG90: 90° (VENTILACIÓN ON)" else "SERVO SG90: 0° (CERRADA)"
-        val servoColor = if (isVentilationOpen) Color.parseColor("#0284C7") else Color.parseColor("#64748B")
-        val servoBg = if (isVentilationOpen) Color.parseColor("#F0F9FF") else Color.parseColor("#F8FAFC")
-
-        badgePaint.color = servoBg
-        badgeBorderPaint.color = servoColor
-        val servoW = badgeTextPaint.measureText(servoLabel) + 30f
-        val servoRect = RectF(pad, bottomY, pad + servoW, bottomY + 36f)
-        canvas.drawRoundRect(servoRect, 18f, 18f, badgePaint)
-        canvas.drawRoundRect(servoRect, 18f, 18f, badgeBorderPaint)
-        badgeTextPaint.color = servoColor
-        canvas.drawText(servoLabel, pad + 15f, bottomY + 25f, badgeTextPaint)
-
-        // Badge Bomba
-        val pumpLabel = if (isPumpActive) "BOMBA: REGANDO (FLUJO ACTIVO)" else "BOMBA: EN ESPERA"
-        val pumpColor = if (isPumpActive) Color.parseColor("#10B981") else Color.parseColor("#64748B")
-        val pumpBg = if (isPumpActive) Color.parseColor("#ECFDF5") else Color.parseColor("#F8FAFC")
-
-        badgePaint.color = pumpBg
-        badgeBorderPaint.color = pumpColor
-        val pumpW = badgeTextPaint.measureText(pumpLabel) + 30f
-        val pumpRect = RectF(w - pad - pumpW, bottomY, w - pad, bottomY + 36f)
-        canvas.drawRoundRect(pumpRect, 18f, 18f, badgePaint)
-        canvas.drawRoundRect(pumpRect, 18f, 18f, badgeBorderPaint)
-        badgeTextPaint.color = pumpColor
-        canvas.drawText(pumpLabel, w - pad - pumpW + 15f, bottomY + 25f, badgeTextPaint)
     }
 }

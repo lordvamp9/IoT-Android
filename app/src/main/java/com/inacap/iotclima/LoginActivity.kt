@@ -6,27 +6,37 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.android.volley.Request
-import com.android.volley.Response
-import com.android.volley.toolbox.StringRequest
-import com.android.volley.toolbox.Volley
+import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.inacap.iotclima.databinding.ActivityLoginBinding
 
 /**
  * Pantalla de inicio de sesión de vamp9 IoT.
- * Mantiene la autenticación en Gateway Raspberry Pi (ingreso.php)
- * con diseño moderno y ligero.
+ * Autenticación nativa y segura mediante Firebase Authentication.
  */
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        auth = FirebaseAuth.getInstance()
+
         setupListeners()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Si el operador ya inició sesión previamente en Firebase, avanzar directo al Dashboard
+        if (auth.currentUser != null) {
+            goToDashboard()
+        }
     }
 
     private fun setupListeners() {
@@ -44,39 +54,29 @@ class LoginActivity : AppCompatActivity() {
             binding.progressBar.visibility = View.VISIBLE
             binding.btnLogin.isEnabled = false
 
-            registrarEnRaspberryYEntrar(email, password)
+            iniciarSesionConFirebase(email, password)
         }
     }
 
-    private fun registrarEnRaspberryYEntrar(usuario: String, pass: String) {
-        val url = "http://192.168.1.35/ingreso.php"
-
-        val stringRequest = object : StringRequest(
-            Request.Method.POST,
-            url,
-            Response.Listener { response ->
+    private fun iniciarSesionConFirebase(email: String, pass: String) {
+        auth.signInWithEmailAndPassword(email, pass)
+            .addOnCompleteListener(this) { task ->
                 binding.progressBar.visibility = View.GONE
                 binding.btnLogin.isEnabled = true
 
-                Toast.makeText(applicationContext, "Servidor: $response", Toast.LENGTH_LONG).show()
-                goToDashboard()
-            },
-            Response.ErrorListener { error ->
-                binding.progressBar.visibility = View.GONE
-                binding.btnLogin.isEnabled = true
-                Toast.makeText(applicationContext, "Error de red: ${error.message}", Toast.LENGTH_SHORT).show()
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Sesión iniciada con éxito", Toast.LENGTH_SHORT).show()
+                    goToDashboard()
+                } else {
+                    val mensaje = when (val ex = task.exception) {
+                        is FirebaseAuthInvalidUserException -> "No existe una cuenta registrada con este correo"
+                        is FirebaseAuthInvalidCredentialsException -> "Credenciales incorrectas (correo o contraseña no válidos)"
+                        is FirebaseNetworkException -> "Error de conexión: verifica tu acceso a Internet"
+                        else -> ex?.localizedMessage ?: "Error al autenticar con Firebase"
+                    }
+                    Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show()
+                }
             }
-        ) {
-            override fun getParams(): MutableMap<String, String> {
-                val params = HashMap<String, String>()
-                params["usuario"] = usuario
-                params["password"] = pass
-                return params
-            }
-        }
-
-        val requestQueue = Volley.newRequestQueue(this)
-        requestQueue.add(stringRequest)
     }
 
     private fun goToDashboard() {

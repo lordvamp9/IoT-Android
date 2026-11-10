@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function operator() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/operators/$(request.auth.uid));
+    }
+    match /operators/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /telemetria/{document} {
+      allow read: if operator();
+      allow write: if false;
+    }
+    match /historial/{document} {
+      allow read: if operator();
+      allow write: if false;
+    }
+    match /actuadores/{document} {
+      allow read: if operator();
+      allow write: if false;
+    }
+    match /respuestas/{document} {
+      allow read: if operator();
+      allow write: if false;
+    }
+    match /commands/{id} {
+      allow read: if operator();
+      allow create: if operator() &&
+        request.resource.data.id == id &&
+        request.resource.data.requestedBy == request.auth.uid &&
+        request.resource.data.status == 'PENDING' &&
+        request.resource.data.deviceId == 'ESP32_AGRO_01' &&
+        request.resource.data.name in ['PING', 'VENT', 'BOMBA', 'MODO'] &&
+        request.resource.data.value in [0, 1];
+      allow update, delete: if false;
+    }
+  }
+}

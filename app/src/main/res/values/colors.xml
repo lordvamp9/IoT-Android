@@ -64,4 +64,12 @@
     <color name="sim_servo_metal">#64748B</color>
     <color name="sim_servo_flap">#3B82F6</color>
     <color name="sim_servo_flap_accent">#60A5FA</color>
+    <!-- Consola Serial OT y Terminal -->
+    <color name="terminal_bg">#0F172A</color>
+    <color name="terminal_border">#334155</color>
+    <color name="terminal_text">#34D399</color>
+    <color name="terminal_cyan">#38BDF8</color>
+    <color name="terminal_amber">#F59E0B</color>
+    <color name="status_contingency">#F59E0B</color>
+    <color name="status_contingency_bg">#FEF3C7</color>
 </resources>

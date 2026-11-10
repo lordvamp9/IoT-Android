@@ -32,11 +32,11 @@
                 android:layout_marginEnd="12dp">
 
                 <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="26dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_leaf"
-                    app:tint="@color/primary"
+                    android:src="@drawable/brand_plant_glass"
+                    
                     android:contentDescription="vamp9 Logo" />
             </com.google.android.material.card.MaterialCardView>
 
@@ -319,7 +319,7 @@
                 <com.inacap.iotclima.AgroSimulation3DView
                     android:id="@+id/agroSimulationView"
                     android:layout_width="match_parent"
-                    android:layout_height="240dp"
+                    android:layout_height="300dp"
                     android:layout_marginHorizontal="12dp"
                     android:layout_marginBottom="14dp" />
 
@@ -537,6 +537,267 @@
                     android:enabled="false"
                     app:thumbTint="@color/white"
                     app:trackTint="@color/primary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ============================================================== -->
+        <!-- SECCIÓN 4: SEGURIDAD, INTEGRIDAD Y CONTINUIDAD (ISO 27000/27400) -->
+        <!-- ============================================================== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/border_subtle"
+            app:cardBackgroundColor="@color/bg_card"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@color/primary_container"
+                        android:layout_marginEnd="10dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_shield_check"
+                            app:tint="@color/primary"
+                            android:contentDescription="Seguridad" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Integridad y Contingencia ISO"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Validación SHA-256 + Persistencia Offline"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvIntegridadBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge_emerald"
+                        android:text="SHA-256 OK"
+                        android:textColor="@color/primary_dark"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_badge_sky"
+                    android:padding="10dp"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/tvIntegrityStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Estado: Telemetría íntegra (Checksum validado)"
+                        android:textColor="@color/secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvIntegrityHash"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Hash: Esperando trama..."
+                        android:textColor="@color/text_secondary"
+                        android:fontFamily="monospace"
+                        android:textSize="10sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvPersistenciaInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Almacenamiento local (SQLite / Firebase Persistence) activo ante contingencias de red."
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ============================================================== -->
+        <!-- SECCIÓN 5: TERMINAL DE COMUNICACIÓN SERIAL OT BIDIRECCIONAL    -->
+        <!-- (Criterios 3.1.2.5 - Envío y 3.1.2.6 - Recepción Serial)       -->
+        <!-- ============================================================== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/border_subtle"
+            app:cardBackgroundColor="@color/bg_card"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@color/manual_bg"
+                        android:layout_marginEnd="10dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_terminal"
+                            app:tint="@color/manual_accent"
+                            android:contentDescription="Consola Serial" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Consola Serial OT Bidireccional"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Transmisión [TX] y Recepción [RX] de Tramas"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge_violet"
+                        android:text="TX / RX"
+                        android:textColor="@color/manual_accent"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="140dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/terminal_border"
+                    app:cardBackgroundColor="@color/terminal_bg"
+                    android:layout_marginBottom="12dp">
+
+                    <ScrollView
+                        android:id="@+id/scrollSerialConsole"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:id="@+id/tvSerialConsole"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="&gt; vamp9 OT Serial Terminal listo...
+&gt; Esperando sincronización de tramas..."
+                            android:textColor="@color/terminal_text"
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            android:lineSpacingExtra="3dp"
+                            android:textIsSelectable="true" />
+                    </ScrollView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEmitirTramaSerial"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="Emitir Trama Serial TX"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        app:backgroundTint="@color/primary"
+                        app:cornerRadius="10dp"
+                        app:icon="@drawable/ic_terminal"
+                        app:iconSize="16dp"
+                        android:layout_marginEnd="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLimpiarConsola"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:text="Limpiar"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        app:strokeColor="@color/border_subtle"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

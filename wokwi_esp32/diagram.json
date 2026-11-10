@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "author": "vamp9",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht", "top": -120, "left": -120, "attrs": { "temperature": "24.5", "humidity": "60.2" } },
+    { "type": "wokwi-servo", "id": "servo", "top": -120, "left": 140, "attrs": {} },
+    { "type": "wokwi-led", "id": "led_bomba", "top": 140, "left": 160, "attrs": { "color": "blue", "label": "BOMBA" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 100, "left": 160, "attrs": { "value": "220" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "dht:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "dht:SDA", "esp:15", "green", [ "v0" ] ],
+    [ "servo:GND", "esp:GND.2", "black", [ "v0" ] ],
+    [ "servo:V+", "esp:5V", "red", [ "v0" ] ],
+    [ "servo:PWM", "esp:18", "orange", [ "v0" ] ],
+    [ "esp:19", "r1:1", "blue", [ "v0" ] ],
+    [ "r1:2", "led_bomba:A", "blue", [ "v0" ] ],
+    [ "led_bomba:C", "esp:GND.2", "black", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
