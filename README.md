@@ -1,4 +1,4 @@
-# IoTClimaRiego · Evaluación 3
+# IoTClimaRiego 
 
 Prototipo de invernadero IoT con aplicación Android, ESP32 simulado en Wokwi, Firebase y AWS IoT Core. La bomba se representa mediante un LED.
 
